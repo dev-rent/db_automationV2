@@ -11,8 +11,9 @@ import db_automation.updater.archive.functions as fnc
 yesterday = str(date.today() - timedelta(days=1))
 
 temp_folder = Path(os.path.join(
-        os.getcwd(), "db_automation/updater/nbb_archive/tmp"
+        os.getcwd(), "db_automation/updater/archive/tmp"
 ))
+temp_folder.mkdir(parents=True, exist_ok=True)
 
 folder_ref = Path(os.path.join(temp_folder, "references"))
 zip_ref = Path(os.path.join(temp_folder, "references.zip"))

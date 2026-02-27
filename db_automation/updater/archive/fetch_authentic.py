@@ -1,11 +1,13 @@
 from datetime import datetime
 
+import requests
 from sqlalchemy.dialects.postgresql import insert
 
 import db_automation.database.models_archive as mdl_a
 from db_automation.api.classes import QueryNbbConsult
 from db_automation.database.classes import DbConnector
 from db_automation.updater.archive.functions import upper_first_char_keys
+from db_automation.updater.archive.functions import sort_keep_lastest
 
 
 def get_URL(obj):
@@ -31,16 +33,28 @@ def first_entry(e_id):
     """Insert references and filings for the first time."""
 
     db = DbConnector(db='cd_nbb_archive')
-    api = QueryNbbConsult(
-        {
-            "db": "authentic",
-            "request": "ref",
-            "ref_id": e_id
-        }
-    )
 
-    r = api.response.json()
+    i = 1
+    attempt = True
+    while attempt:
+        try:
+            r = QueryNbbConsult(
+                {
+                    "db": "authentic",
+                    "request": "ref",
+                    "ref_id": e_id
+                }
+            ).response.json()
+            attempt = False
+        except requests.exceptions.ConnectionError:
+            i += 1
+            if i > 3:
+                attempt = False
+
     references = upper_first_char_keys(r)
+    if isinstance(references, dict):
+        references = [references]
+    references = sort_keep_lastest(references)
 
     # First phase: insert known references.
     stmt = (
@@ -67,15 +81,18 @@ def first_entry(e_id):
     filing_statements = []
 
     for f_id in filing_ids:
-        api = QueryNbbConsult(
+        res = QueryNbbConsult(
             {
                 "db": "authentic",
                 "request": "accData",
                 "ref_id": f_id
             }
-        )
-        api.response.raise_for_status()
-        r = api.response.json()
+        ).response
+
+        if res.status_code != 200:
+            continue
+
+        r = res.json()
 
         stmt = (
             insert(mdl_a.Filing)

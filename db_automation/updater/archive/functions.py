@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from datetime import datetime
 
 from db_automation.api.classes import QueryNbbConsult
 from db_automation.logger.config import update_nbb_logger
@@ -87,3 +88,20 @@ def standarise_keys(path: str):
 
                 with open(entry.path, 'w') as f:
                     f.write(json.dumps(new_data))
+
+
+def sort_keep_lastest(ref_list: list) -> list:
+    """Sort dictionaries and keep the ones after 2021."""
+
+    lst = sorted(
+        (
+            x for x in ref_list
+            if datetime.strptime(
+                x["ExerciseDates"]["EndDate"],
+                "%Y-%m-%d"
+                ).year >= 2021
+        ),
+        key=lambda x: (x["ExerciseDates"]["EndDate"], x["DepositDate"]),
+        reverse=True
+        )
+    return lst

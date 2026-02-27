@@ -194,3 +194,4 @@ cython_debug/
 .cursorindexingignore
 
 # Other
+db_automation/updater/archive/tmp/*

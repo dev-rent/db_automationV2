@@ -18,7 +18,7 @@ def update():
     """"""
 
     # Correct dictionary keys of new data inplace
-    fnc.standarise_keys(str(folder_ref))
+    # fnc.standarise_keys(str(folder_ref))
 
     # Map enterprises that will be updated
     tuple_set = set()
@@ -46,6 +46,12 @@ def update():
     while tuple_set:
         temp_tuple = tuple_set.pop()
 
+        # Corresponding filing
+        filing = os.path.join(
+            str(folder_filing),
+            f"{temp_tuple[1]}.json"
+        )
+
         # Get existing record for enterprise from database
         stmt = (
             select(mdl.Reference.json_reference)
@@ -58,6 +64,8 @@ def update():
         if not old_value:  # First entry in database
             try:
                 first_entry(temp_tuple[0])
+                os.remove(temp_tuple[2])
+                os.remove(filing)
                 continue
             except Exception as e:
                 update_nbb_logger.error(
@@ -85,12 +93,6 @@ def update():
                     key=lambda x: x['ReferenceNumber'],
                     reverse=True
                 )
-
-        # Corresponding filing
-        filing = os.path.join(
-            str(folder_filing),
-            f"{temp_tuple[1]}.json"
-        )
 
         try:
             with open(filing, 'r') as f:
@@ -140,3 +142,6 @@ def update():
         with db.engine.begin() as conn:
             conn.execute(stmt_ref)
             conn.execute(stmt_filing)
+
+        os.remove(temp_tuple[2])
+        os.remove(filing)
