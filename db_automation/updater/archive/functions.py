@@ -1,3 +1,5 @@
+import os
+import json
 import time
 
 from db_automation.api.classes import QueryNbbConsult
@@ -55,3 +57,32 @@ def api_call(
                 attempt = False
                 success = False
     return success
+
+
+def standarise_keys(path: str):
+    """Use UpperCamelCase for all dictionary keys."""
+
+    def upper_first_char_keys(lst: list):
+        if isinstance(lst, dict):
+            return {
+                (
+                    k[:1].upper() + k[1:]
+                    if isinstance(k, str) and k else k
+                ): upper_first_char_keys(v)
+                for k, v in lst.items()
+            }
+        elif isinstance(lst, list):
+            return [upper_first_char_keys(item) for item in lst]
+        else:
+            return lst
+
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.is_file() and entry.name.endswith('.json'):
+                with open(entry.path, 'r') as f:
+                    data = json.load(f)
+
+                new_data = upper_first_char_keys(data)
+
+                with open(entry.path, 'w') as f:
+                    f.write(json.dumps(new_data))
