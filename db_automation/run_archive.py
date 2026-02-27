@@ -1,6 +1,6 @@
 import sys
 
-from db_automation.logger.log_config import update_nbb_logger
+from db_automation.logger.config import update_nbb_logger
 from db_automation.updater.nbb_archive.update import fetch_extracts, update
 
 
