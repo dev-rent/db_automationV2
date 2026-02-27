@@ -1,7 +1,8 @@
 import sys
 
 from db_automation.logger.config import update_nbb_logger
-from db_automation.updater.nbb_archive.update import fetch_extracts, update
+from db_automation.updater.archive.fetch_extracts import fetch_extracts
+from db_automation.updater.archive.update import update
 
 
 def main():

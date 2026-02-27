@@ -6,7 +6,7 @@ from db_automation.api.classes import QueryNbbConsult
 from db_automation.logger.config import update_nbb_logger
 
 
-def api_call(
+def extracts_call(
     dest_zip: str,
     date: str,
     references=True
@@ -59,22 +59,23 @@ def api_call(
     return success
 
 
+def upper_first_char_keys(lst: list):
+    if isinstance(lst, dict):
+        return {
+            (
+                k[:1].upper() + k[1:]
+                if isinstance(k, str) and k else k
+            ): upper_first_char_keys(v)
+            for k, v in lst.items()
+        }
+    elif isinstance(lst, list):
+        return [upper_first_char_keys(item) for item in lst]
+    else:
+        return lst
+
+
 def standarise_keys(path: str):
     """Use UpperCamelCase for all dictionary keys."""
-
-    def upper_first_char_keys(lst: list):
-        if isinstance(lst, dict):
-            return {
-                (
-                    k[:1].upper() + k[1:]
-                    if isinstance(k, str) and k else k
-                ): upper_first_char_keys(v)
-                for k, v in lst.items()
-            }
-        elif isinstance(lst, list):
-            return [upper_first_char_keys(item) for item in lst]
-        else:
-            return lst
 
     with os.scandir(path) as it:
         for entry in it:

@@ -26,7 +26,7 @@ def fetch_extracts():
 
     update_nbb_logger.info('Start fetch & extract process')
 
-    success = fnc.api_call(
+    success = fnc.extracts_call(
         dest_zip=str(zip_ref),
         date=yesterday,
         references=True
@@ -39,7 +39,7 @@ def fetch_extracts():
         )
         sys.exit()
 
-    success = fnc.api_call(
+    success = fnc.extracts_call(
         dest_zip=str(zip_filing),
         date=yesterday,
         references=False
