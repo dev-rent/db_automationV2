@@ -18,7 +18,7 @@ def update():
     """"""
 
     # Correct dictionary keys of new data inplace
-    # fnc.standarise_keys(str(folder_ref))
+    fnc.standarise_keys(str(folder_ref))
 
     # Map enterprises that will be updated
     tuple_set = set()
