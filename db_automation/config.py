@@ -21,7 +21,8 @@ class Config:
 
     # Logger module
     LOG_CONFIG = str(os.getenv("LOG_CONFIG", ""))
-    LOG_UPDATE = str(os.getenv("LOG_UPDATE", ""))
+    LOG_UPDATE_CBE = str(os.getenv("LOG_UPDATE_CBE", ""))
+    LOG_UPDATE_NBB = str(os.getenv("LOG_UPDATE_NBB", ""))
     LOG_MAIL = str(os.getenv("LOG_MAIL", ""))
 
     # Mailer module
