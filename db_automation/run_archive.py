@@ -9,7 +9,7 @@ def main():
     update_nbb_logger.info('Starting process...')
 
     try:
-        # fetch_extracts()
+        fetch_extracts()
         update()
     except Exception as e:
         update_nbb_logger.error(
