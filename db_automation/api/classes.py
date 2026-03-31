@@ -50,7 +50,6 @@ class QueryNbbConsult:
     url_map = {
         "authentic": {
             "hdr": {
-                "X-Request-Id": str(uuid.uuid4()),
                 "NBB-CBSO-Subscription-Key": Config.API_KEY_AUTH,
                 "User-Agent": "PostmanRuntime/7.37.3"
             },
@@ -60,12 +59,12 @@ class QueryNbbConsult:
             },
             "accData": {
                 "url":  "authentic/deposit/{}/accountingData",
-                "accept": "application/x.jsonxbrl"
+                "accept": "application/x.jsonxbrl",
+                "pdf": "application/pdf"
             }
         },
         "extracts": {
             "hdr": {
-                "X-Request-Id": str(uuid.uuid4()),
                 "NBB-CBSO-Subscription-Key": Config.API_KEY_EXTR,
                 "User-Agent": "PostmanRuntime/7.37.3"
             },
@@ -80,31 +79,18 @@ class QueryNbbConsult:
         }
     }
 
-    def __init__(self, params: dict):
-        self.db = params.get("db")
-        self.request = params.get("request")
+    def __init__(self, params: dict[str, str], *, pdf=False):
+        self.db = params.get("db", "")
+        self.request = params.get("request", "")
         self.ref_id = re.sub(r"[^\d\-]", "", params.get("ref_id", ""))
         self.date = params.get("date", "")
+        self.pdf = pdf
 
     @property
-    def response(self) -> requests.Response:
-        url, header = self._url_header_generator()
-        self.url = url
-        self.headers = header
-        response = requests.get(url=url, headers=header)
-        return response
-
-    def _url_header_generator(self):
-        if not self.db or not self.request:
-            raise ValueError("database and/or request type not given")
-
-        base_url = "https://ws.cbso.nbb.be/"
+    def url(self) -> str:
         endpoint = self.url_map[self.db][self.request]["url"]
+        base_url = "https://ws.cbso.nbb.be/"
         url = base_url + endpoint
-        header = self.url_map[self.db]["hdr"]
-        accept = {"accept": self.url_map[self.db][self.request]["accept"]}
-
-        header.update(accept)
 
         if self.db == "authentic":
             if not self.ref_id:
@@ -116,4 +102,22 @@ class QueryNbbConsult:
         else:
             raise Exception("A correct URL could not be generated.")
 
-        return url, header
+        return url
+
+    @property
+    def header(self) -> dict[str, str]:
+        header = self.url_map[self.db]["hdr"].copy()
+        header["X-Request-Id"] = str(uuid.uuid4())
+
+        if self.pdf:
+            header['Accept'] = self.url_map[self.db][self.request]["pdf"]
+        else:
+            header['Accept'] = self.url_map[self.db][self.request]["accept"]
+
+        return header
+
+    @property
+    def response(self) -> requests.Response:
+        """Return API response."""
+
+        return requests.get(url=self.url, headers=self.header)
