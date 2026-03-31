@@ -17,6 +17,8 @@ from db_automation.logger.config import update_nbb_logger
 def update():
     """"""
 
+    failed_inserts = []
+
     # Correct dictionary keys of new data inplace
     fnc.standarise_keys(str(folder_ref))
 
@@ -64,8 +66,12 @@ def update():
         if not old_value:  # First entry in database
             try:
                 first_entry(temp_tuple[0])
-                os.remove(temp_tuple[2])
-                os.remove(filing)
+                try:
+                    os.remove(temp_tuple[2])
+                    os.remove(filing)
+                except Exception as e:
+                    update_nbb_logger.error('failed deleting file.')
+                    update_nbb_logger.exception(e)
                 continue
             except Exception as e:
                 update_nbb_logger.error(
@@ -73,6 +79,7 @@ def update():
                     temp_tuple[0]
                 )
                 update_nbb_logger.exception(e)
+                failed_inserts.append(temp_tuple[0])
                 continue
 
         else:  # Get all known references and compare
@@ -81,6 +88,12 @@ def update():
                 known_refs.add(d.get("ReferenceNumber"))
 
             if temp_tuple[1] in known_refs:
+                try:
+                    os.remove(temp_tuple[2])
+                    os.remove(filing)
+                except Exception as e:
+                    update_nbb_logger.error('failed deleting file.')
+                    update_nbb_logger.exception(e)
                 continue
             else:
                 # open file
@@ -100,11 +113,7 @@ def update():
         except Exception as e:
             update_nbb_logger.error("File not found: %s", temp_tuple[1])
             update_nbb_logger.exception(e)
-            try:
-                # fnc.insert_references(temp_tuple[0], new_value, db)
-                update_nbb_logger.info("But references stored in DB.")
-            except Exception:
-                update_nbb_logger.error("Failed storing references.")
+            failed_inserts.append(temp_tuple[0])
             continue
 
         # Prepare new statements
@@ -143,5 +152,15 @@ def update():
             conn.execute(stmt_ref)
             conn.execute(stmt_filing)
 
-        os.remove(temp_tuple[2])
-        os.remove(filing)
+        try:
+            os.remove(temp_tuple[2])
+            os.remove(filing)
+        except Exception as e:
+            update_nbb_logger.error('failed deleting file.')
+            update_nbb_logger.exception(e)
+
+    for fail in failed_inserts:
+        update_nbb_logger.info("%s", fail)
+
+    update_nbb_logger.info("Completed update process.")
+    return True
