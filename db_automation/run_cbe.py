@@ -10,17 +10,17 @@ from db_automation.updater.cbe.handlers import (
 
 def main():
     update_cbe_logger.info('Starting process...')
-    clean_up()
 
     try:
         zipbot(date_=date.today() - timedelta(days=1))
         preprocess_cbe_data(path=Config.ZIP_DESTINATION)
 
         table_dct = truncate_db(db=Config.CBE_DB)
-        success = populate_db(table_dct, db=Config.CBE_DB)
+        populate_db(table_dct, db=Config.CBE_DB)
+        success = True
     except Exception as e:
+        update_cbe_logger.exception(e)
         success = False
-        print(e)
 
     clean_up()
     send_update_mail(success, Config.LOG_UPDATE_CBE)
