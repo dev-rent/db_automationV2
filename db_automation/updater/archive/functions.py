@@ -41,7 +41,7 @@ def extracts_call(
                     "date": date
                 }
             )
-
+            time.sleep(2)  # Prevents error requests.exceptions.ConnectionError: HTTPSConnectionPool(host='ws.cbso.nbb.be', port=443): Max retries exceeded with url: /extracts/batch/2026-03-14/references (Caused by NameResolutionError("HTTPSConnection(host='ws.cbso.nbb.be', port=443): Failed to resolve 'ws.cbso.nbb.be' ([Errno 8] nodename nor servname provided, or not known)"))
             with open(dest_zip, "wb") as f:
                 f.write(api.response.content)
 
