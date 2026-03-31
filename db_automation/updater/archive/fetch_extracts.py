@@ -4,8 +4,10 @@ import zipfile
 from datetime import date, timedelta
 from pathlib import Path
 
-from db_automation.logger.config import update_nbb_logger
 import db_automation.updater.archive.functions as fnc
+from db_automation.config import Config
+from db_automation.logger.config import update_nbb_logger
+from db_automation.mailer.send_mail import send_update_mail
 
 
 yesterday = str(date.today() - timedelta(days=1))
@@ -38,6 +40,7 @@ def fetch_extracts():
             'Retrieving ZIP references was unsuccessful. '
             'Shutting down process...'
         )
+        send_update_mail(success, Config.LOG_UPDATE_NBB)
         sys.exit()
 
     success = fnc.extracts_call(
@@ -51,6 +54,7 @@ def fetch_extracts():
             'Retrieving ZIP filings was unsuccessful. '
             'Shutting down process...'
         )
+        send_update_mail(success, Config.LOG_UPDATE_NBB)
         sys.exit()
 
     with zipfile.ZipFile(zip_ref, "r") as z:
