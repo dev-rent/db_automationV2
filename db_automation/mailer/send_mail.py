@@ -1,7 +1,7 @@
 from email.message import EmailMessage
 from smtplib import SMTP
 
-from config import Config
+from db_automation.config import Config
 
 
 def send_update_mail(status: bool, log_path: str):
