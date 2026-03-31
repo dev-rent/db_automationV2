@@ -1,4 +1,5 @@
 from sqlalchemy import URL, create_engine
+from sqlalchemy.ext.automap import automap_base
 
 from db_automation.config import Config
 
@@ -38,3 +39,62 @@ class DbConnector:
             isolation_level="SERIALIZABLE",
             echo=echo
         )
+
+
+class CbeDbConnector(DbConnector):
+    """A subclass with premapped info from the "cd_cbe_data" database.
+
+    Attributes
+    ----------
+    map : dict
+        dictionary with database table objects as value. Needs a string key.
+
+    Methods
+    -------
+    codeHandler(df)
+        splits "code.csv" into different categories, and provides the data to
+        the corresponding tables in the CBE database.
+    """
+
+    def __init__(self, db, *, echo=False) -> None:
+        """"""
+
+        super().__init__(db=db, echo=echo)
+
+        Base = automap_base()
+        Base.prepare(autoload_with=self.engine)
+
+        self.activitygroup = Base.classes.activity_groups
+        self.classification = Base.classes.classifications
+        self.contacttype = Base.classes.contact_types
+        self.entitycontact = Base.classes.entity_contactinfo
+        self.juridicalform = Base.classes.juridical_forms
+        self.juridicalsituation = Base.classes.juridical_situations
+        self.language = Base.classes.languages
+        self.nace2003 = Base.classes.nace2003
+        self.nace2008 = Base.classes.nace2008
+        self.nace2025 = Base.classes.nace2025
+        self.status = Base.classes.statusses
+        self.typeofaddress = Base.classes.types_of_address
+        self.typeofdenomination = Base.classes.types_of_denomination
+        self.typeofenterprise = Base.classes.types_of_enterprise
+
+        self.enterprise = Base.classes.enterprises
+        self.establishment = Base.classes.establishments
+        self.branch = Base.classes.branches
+
+        self.activityenterprise = Base.classes.activities_enterprise
+        self.activityestablishment = Base.classes.activities_establishment
+        self.activitybranch = Base.classes.activities_branch
+
+        self.addressenterprise = Base.classes.addresses_enterprise
+        self.addressestablishment = Base.classes.addresses_establishment
+        self.addressbranch = Base.classes.addresses_branch
+
+        self.contactenterprise = Base.classes.contact_enterprise
+        self.contactestablishment = Base.classes.contact_establishment
+        self.contactbranch = Base.classes.contact_branch
+
+        self.denominationenterprise = Base.classes.denominations_enterprise
+        self.denominationestablishment = Base.classes.denominations_establishment
+        self.denominationbranch = Base.classes.denominations_branch
