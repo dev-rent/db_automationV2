@@ -67,12 +67,12 @@ class CbeDbConnector(DbConnector):
         self.activitygroup = Base.classes.activity_groups
         self.classification = Base.classes.classifications
         self.contacttype = Base.classes.contact_types
-        self.entitycontact = Base.classes.entity_contactinfo
+        self.entitycontact = Base.classes.entity_contactinfo  # TODO: Name varies between "cd_cbe_data" and "cd_cbe_dataV3"
         self.juridicalform = Base.classes.juridical_forms
         self.juridicalsituation = Base.classes.juridical_situations
         self.language = Base.classes.languages
-        self.nace2003 = Base.classes.nace2003
-        self.nace2008 = Base.classes.nace2008
+        self.nace2003 = Base.classes.nace2003  # TODO: Remove in future
+        self.nace2008 = Base.classes.nace2008  # TODO: Remove in future
         self.nace2025 = Base.classes.nace2025
         self.status = Base.classes.statusses
         self.typeofaddress = Base.classes.types_of_address
