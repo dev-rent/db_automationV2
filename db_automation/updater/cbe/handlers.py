@@ -174,10 +174,9 @@ def truncate_db(db) -> dict:
     return table_dct
 
 
-def populate_db(table_dct: dict, db) -> bool:
+def populate_db(table_dct: dict, db) -> None:
     """Populate database with new data."""
 
-    success = False
     copy_stmt = """
         COPY {} FROM STDIN WITH (
         FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', ENCODING 'UTF8')
@@ -199,12 +198,14 @@ def populate_db(table_dct: dict, db) -> bool:
             'r',
             encoding="utf-8"
         ) as file:
-            cursor_ent.copy_expert(
-                copy_stmt.format(table_dct.pop("enterprise").__table__.name),
-                file
-            )
-            cursor_ent.close()
-            conn.commit()
+            with cursor_ent.copy(
+                copy_stmt.format(table_dct.pop("enterprise").__table__.name)
+            ) as copy:
+                while chunk := file.read(1024 * 1024):
+                    copy.write(chunk)
+
+        conn.commit()
+        cursor_ent.close()
 
         # Step 2: Establishments
         update_cbe_logger.info("Populating table 'establishments'.")
@@ -215,12 +216,14 @@ def populate_db(table_dct: dict, db) -> bool:
             "r",
             encoding="utf-8"
         ) as file:
-            cursor_est.copy_expert(
-                copy_stmt.format(table_dct.pop("establishment").__table__.name),
-                file,
-            )
-            cursor_est.close()
-            conn.commit()
+            with cursor_est.copy(
+                copy_stmt.format(table_dct.pop("establishment").__table__.name)
+            ) as copy:
+                while chunk := file.read(1024 * 1024):
+                    copy.write(chunk)
+
+        conn.commit()
+        cursor_est.close()
 
         # Step 3: Branches
         update_cbe_logger.info("Populating table 'branches'.")
@@ -231,12 +234,14 @@ def populate_db(table_dct: dict, db) -> bool:
             "r",
             encoding="utf-8"
         ) as file:
-            cursor_bra.copy_expert(
-                copy_stmt.format(table_dct.pop("branch").__table__.name),
-                file,
-            )
-            cursor_bra.close()
-            conn.commit()
+            with cursor_bra.copy(
+                copy_stmt.format(table_dct.pop("branch").__table__.name)
+            ) as copy:
+                while chunk := file.read(1024 * 1024):
+                    copy.write(chunk)
+
+        conn.commit()
+        cursor_bra.close()
 
         # Step 4: remainder of files
         for key, table_info in table_dct.items():
@@ -245,19 +250,21 @@ def populate_db(table_dct: dict, db) -> bool:
             cursor = conn.cursor()
 
             with open(csv_file, "r", encoding="utf-8") as file:
-                cursor.copy_expert(
-                    copy_stmt.format(table_info.__table__.name),
-                    file
-                )
-                cursor.close()
-                conn.commit()
+                with cursor.copy(
+                    copy_stmt.format(table_info.__table__.name)
+                ) as copy:
+                    while chunk := file.read(1024 * 1024):
+                        copy.write(chunk)
 
-        success = True
+            conn.commit()
+            cursor.close()
+
     except Exception as e:
         update_cbe_logger.error(f"While copying CSV into database => {e}")
+        conn.rollback()
+        raise
     finally:
         conn.close()
-        return success
 
 
 def clean_up():
