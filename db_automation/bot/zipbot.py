@@ -20,22 +20,21 @@ class ZipBot:
     ----------
     date : datetime
         the user-given date or default.
+    ref_id : str
+        calculated ZIP ID.
     response : requests.Response
-        Response object.
-    success : bool
-        whether operation succeeded or not.
+        returned response object.
 
     Methods
     -------
-    save_to(dest=Config.ZIP_DESTINATION)
-        function takes destination (dest: str) as argument.
-    open_zip(file=(Config.ZIP_DESTINATION + Config.ZIP_FILENAME))
-        function that opens ZIP and store content on destined location.
+    save_to(dest, filename)
+        function saves response content into a local zipfile.
+    open_zip(dest, filename)
+        function opens zipfile and stores content on destined location.
     """
 
     def __init__(self, date_: date):
         self.date = date_
-        self.success: bool = False
         self.ref_id = self._calculate_zip_id()
         self.response = self._make_request()
 
@@ -104,7 +103,6 @@ class ZipBot:
                 return zip_response
             else:
                 update_cbe_logger.info("ZIP file downloaded successfully.")
-                self.success = True
                 return zip_response
 
     def save_to(self, dest, filename):
@@ -134,4 +132,3 @@ class ZipBot:
 
         with zipfile.ZipFile(filepath, mode='r',) as reader:
             reader.extractall(path=dest)
-        self.success = True
