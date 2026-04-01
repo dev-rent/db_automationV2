@@ -16,8 +16,9 @@ class Config:
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
     DB_HOST = os.getenv("DB_HOST", "")
     DB_PORT = int(os.getenv("DB_PORT", ""))
-    DB_NBB = os.getenv("DB_NBB")
-    DB_ARCHIVE = os.getenv("DB_ARCHIVE")
+    DB_NBB = os.getenv("DB_NBB", "")
+    DB_ARCHIVE = os.getenv("DB_ARCHIVE", "")
+    CBE_DB = os.getenv("CBE_DB", "")
 
     # Logger module
     LOG_CONFIG = os.getenv("LOG_CONFIG", "")
@@ -42,7 +43,6 @@ class Config:
     ZERO_POINT = os.getenv("ZERO_POINT", "")
     ZIP_DESTINATION = os.getenv("ZIP_DESTINATION", "")
     ZIP_FILENAME = os.getenv("ZIP_FILENAME", "")
-    CBE_DB = os.getenv("CBE_DB", "")
 
     # NBB updater module
     API_KEY_AUTH = os.getenv("API_KEY_AUTH", "")
