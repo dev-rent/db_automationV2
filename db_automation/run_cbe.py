@@ -15,8 +15,8 @@ def main():
         zipbot(date_=date.today() - timedelta(days=1))
         preprocess_cbe_data(path=Config.ZIP_DESTINATION)
 
-        table_dct = truncate_db(db=Config.CBE_DB)
-        populate_db(table_dct, db=Config.CBE_DB)
+        table_dct = truncate_db(db=Config.DB_CBE)
+        populate_db(table_dct, db=Config.DB_CBE)
         success = True
     except Exception as e:
         update_cbe_logger.exception(e)
