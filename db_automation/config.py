@@ -18,7 +18,7 @@ class Config:
     DB_PORT = int(os.getenv("DB_PORT", ""))
     DB_NBB = os.getenv("DB_NBB", "")
     DB_ARCHIVE = os.getenv("DB_ARCHIVE", "")
-    CBE_DB = os.getenv("CBE_DB", "")
+    DB_CBE = os.getenv("DB_CBE", "")
 
     # Logger module
     LOG_CONFIG = os.getenv("LOG_CONFIG", "")
