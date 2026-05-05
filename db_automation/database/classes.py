@@ -36,7 +36,7 @@ class DbConnector:
         )
         self.engine = create_engine(
             self.url,
-            isolation_level="SERIALIZABLE",
+            isolation_level="READ COMMITTED",
             echo=echo
         )
 
