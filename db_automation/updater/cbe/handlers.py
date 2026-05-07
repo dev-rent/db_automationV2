@@ -16,6 +16,8 @@ def zipbot(date_) -> None:
     """Run zipbot and store result."""
 
     bot = ZipBot(date_)
+    if bot is None:
+        raise Exception("Bot is None. Aborting...")
     bot.save_to(dest=Config.ZIP_DESTINATION, filename=Config.ZIP_FILENAME)
     bot.open_zip(dest=Config.ZIP_DESTINATION, filename=Config.ZIP_FILENAME)
 
