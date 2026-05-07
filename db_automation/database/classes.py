@@ -17,7 +17,7 @@ class DbConnector:
         callable engine for the database.
     """
 
-    def __init__(self, db: str, *, echo=False) -> None:
+    def __init__(self, db: str, *, echo=False, **url_kwargs) -> None:
         """
         Parameters
         ----------
@@ -25,19 +25,23 @@ class DbConnector:
             the database to connect with.
         echo
             feedback from the database (default=False).
+        url_kwargs
+            optional overrides for URL.create() (e.g. drivername, host, port).
         """
-        self.url = URL.create(
-            "postgresql+psycopg",
-            username=Config.DB_USERNAME,
-            password=Config.DB_PASSWORD,
-            host=Config.DB_HOST,
-            port=Config.DB_PORT,
-            database=db,
-        )
+        params = {
+            "drivername": "postgresql+psycopg",
+            "username": Config.DB_USERNAME,
+            "password": Config.DB_PASSWORD,
+            "host": Config.DB_HOST,
+            "port": Config.DB_PORT,
+            "database": db,
+            **url_kwargs,
+        }
+        self.url = URL.create(**params)
         self.engine = create_engine(
             self.url,
             isolation_level="READ COMMITTED",
-            echo=echo
+            echo=echo,
         )
 
 
