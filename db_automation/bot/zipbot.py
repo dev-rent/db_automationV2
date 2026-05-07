@@ -100,7 +100,7 @@ class ZipBot:
                     f"Status code: {zip_response.status_code}, "
                     f"message: {response.reason}"
                     ))
-                return zip_response
+                return None
             else:
                 update_cbe_logger.info("ZIP file downloaded successfully.")
                 return zip_response
