@@ -195,3 +195,5 @@ cython_debug/
 
 # Other
 db_automation/updater/archive/tmp/*
+db_automation/updater/cbe/tmp/*
+examples/*
