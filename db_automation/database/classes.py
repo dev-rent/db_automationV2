@@ -17,7 +17,7 @@ class DbConnector:
         callable engine for the database.
     """
 
-    def __init__(self, db: str, *, echo=False, **url_kwargs) -> None:
+    def __init__(self, db: str, *, echo=False, pool_size=5, **url_kwargs) -> None:
         """
         Parameters
         ----------
@@ -25,6 +25,8 @@ class DbConnector:
             the database to connect with.
         echo
             feedback from the database (default=False).
+        pool_size
+            number of connections to keep in the pool (default=5).
         url_kwargs
             optional overrides for URL.create() (e.g. drivername, host, port).
         """
@@ -41,6 +43,7 @@ class DbConnector:
         self.engine = create_engine(
             self.url,
             isolation_level="READ COMMITTED",
+            pool_size=pool_size,
             echo=echo,
         )
 
