@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, datetime
 from sqlalchemy import select
 from sqlalchemy.engine import Connection
@@ -243,6 +244,8 @@ def loader(company: Company, connection: Connection):
     # Stateless statements
     stmt_ci = insert(nbb.CompanyInfo)
     stmt_statements = insert(nbb.Statement)
+    stmt_codes = insert(nbb.AccountingCode)
+    stmt_facts = insert(nbb.StatementFact)
     stmt_persons = insert(nbb.NaturalPerson)
     stmt_entities = insert(nbb.Entity)
     stmt_admin_n = insert(nbb.AdministratorNatural)
@@ -291,7 +294,22 @@ def loader(company: Company, connection: Connection):
                 "last_update": UPDATE_TS
             }
         )
-        # rows_facts.append()
+        if filing.filing is not None:
+            r_merged = defaultdict(lambda: {"book_value": None, "previous_value": None})
+            for rubric in filing.filing.rubrics:
+                if rubric.period == "N":
+                    r_merged[rubric.code]["book_value"] = float(rubric.value)
+                elif rubric.period == "NM1":
+                    r_merged[rubric.code]["previous_value"] = float(rubric.value)
+
+            for code, values in r_merged.items():
+                rows_facts.append({
+                    "account_year": filing.reference.account_year,
+                    "filing_id": filing.reference.reference_number,
+                    "accountcode_id": code,
+                    "book_value": values["book_value"],
+                    "previous_value": values["previous_value"],
+                })
 
     rows_person = []
     rows_admin_n = []
@@ -314,6 +332,8 @@ def loader(company: Company, connection: Connection):
         rows_partint.extend(e.get('participating_interests', []))
         rows_sh_entity.extend(e.get('shareholders_entity', []))
     
+    upsert_codes = stmt_codes.on_conflict_do_nothing()
+    upsert_facts = stmt_facts.on_conflict_do_nothing()
     upsert_ci = stmt_ci.on_conflict_do_update(
         index_elements=['enterprise_id'],
         set_={col: stmt_ci.excluded[col] for col in
@@ -366,6 +386,14 @@ def loader(company: Company, connection: Connection):
     connection.execute(upsert_ci, rows_ci)
     if rows_statements:
         connection.execute(upsert_statements, rows_statements)
+
+    if rows_facts:
+        codes = [
+            {"accountcode_id": row["accountcode_id"], "denomination": row["accountcode_id"]}
+            for row in rows_facts
+        ]
+        connection.execute(upsert_codes, codes)
+        connection.execute(upsert_facts, rows_facts)
 
     if rows_person:
         connection.execute(upsert_persons, rows_person)

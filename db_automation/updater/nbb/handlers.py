@@ -77,11 +77,16 @@ def populate_destination(
             executor.submit(_process_one, e_id, source_db.engine, dest_db.engine): e_id
             for e_id in to_update
         }
+        failed = []
         for future in as_completed(futures):
             try:
                 future.result()
             except Exception:
                 update_nbb_logger.exception(f"Failed for {futures[future]}")
+                failed.append(futures[future])
+        if failed:
+            raise RuntimeError(f"{len(failed)} enterprise(s) failed: {failed}")
+
 
 
 
