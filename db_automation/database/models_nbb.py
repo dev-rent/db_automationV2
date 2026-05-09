@@ -1,10 +1,10 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Boolean
+from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Boolean, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP, DATE, UUID
+from sqlalchemy.dialects.postgresql import TIMESTAMP, DATE, UUID
 
 
 class Base(DeclarativeBase):
@@ -15,11 +15,7 @@ class CountryCode(Base):
     __tablename__ = "country_codes"
 
     english_name: Mapped[str] = mapped_column(String(63), nullable=True)
-    dutch_name: Mapped[str] = mapped_column(
-        String(63),
-        primary_key=True,
-        nullable=False,
-    )
+    dutch_name: Mapped[str] = mapped_column(String(63), primary_key=True, nullable=False)
     a_2: Mapped[str] = mapped_column(String(2), nullable=False)
     a_3: Mapped[str] = mapped_column(String(3), nullable=False)
     numeric_code: Mapped[str] = mapped_column(String(3), nullable=False)
@@ -36,7 +32,7 @@ class CompanyInfo(Base):
     denomination: Mapped[str] = mapped_column(String(255), nullable=True)
     legal_situation: Mapped[str] = mapped_column(String(3), nullable=True)
     search_field: Mapped[str] = mapped_column(String(255), nullable=True)
-    last_update: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
+    last_update: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
 
     def __repr__(self) -> str:
         return f"{self.enterprise_id}"
@@ -97,6 +93,9 @@ class StatementFact(Base):
 
 class NaturalPerson(Base):
     __tablename__ = "natural_persons"
+    __table_args__ = (
+        UniqueConstraint('first_name', 'last_name', 'street', 'zipcode', name='uniq_person'),
+    )
 
     person_uuid: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True
@@ -107,8 +106,10 @@ class NaturalPerson(Base):
     street_number: Mapped[str] = mapped_column(String(255), nullable=True)
     box: Mapped[str] = mapped_column(String(255), nullable=True)
     zipcode: Mapped[str] = mapped_column(String(255), nullable=True)
-    country_code: Mapped[str] = mapped_column(String(2), nullable=True)
+    country_code: Mapped[str] = mapped_column(String(7), nullable=True)
     search_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    search_name_reversed: Mapped[str] = mapped_column(String(255), nullable=True)
+    profession: Mapped[str] = mapped_column(String(255), nullable=True)
 
     def __repr__(self) -> str:
         return f"{self.first_name} {self.last_name}"
@@ -116,17 +117,21 @@ class NaturalPerson(Base):
 
 class Entity(Base):
     __tablename__ = "entities"
+    __table_args__ = (
+        UniqueConstraint('entity_id', 'country_code', name='uniq_entity'),
+    )
 
     entity_uuid: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True
     )
     entity_id: Mapped[str] = mapped_column(String(39), nullable=False)
-    country_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    country_code: Mapped[str] = mapped_column(String(7), nullable=False)
     denomination: Mapped[str] = mapped_column(String(255), nullable=True)
     street: Mapped[str] = mapped_column(String(255), nullable=True)
     street_number: Mapped[str] = mapped_column(String(255), nullable=True)
     box: Mapped[str] = mapped_column(String(255), nullable=True)
     zipcode: Mapped[str] = mapped_column(String(255), nullable=True)
+    search_name: Mapped[str] = mapped_column(String(255))
 
     def __repr__(self) -> str:
         return f"{self.entity_id} - {self.denomination}"
@@ -139,7 +144,7 @@ class AdministratorNatural(Base):
         ForeignKey("company_info.enterprise_id"), primary_key=True
     )
     person_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("natural_persons.person_uuid"), primary_key=True
+        ForeignKey("natural_persons.person_uuid", onupdate="CASCADE"), primary_key=True
     )
     filing_id: Mapped[str] = mapped_column(
         ForeignKey("statements.filing_id"), primary_key=True
@@ -152,15 +157,21 @@ class AdministratorNatural(Base):
 
 class AdministratorLegal(Base):
     __tablename__ = "administrators_legal"
+    __table_args__ = (
+        UniqueConstraint(
+            'enterprise_id', 'entity_uuid', 'person_uuid', 'filing_id', 'account_year',
+            name='uniq_admin_legal'
+        ),
+    )
 
     enterprise_id: Mapped[str] = mapped_column(
         ForeignKey("company_info.enterprise_id"), primary_key=True
     )
     entity_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("entities.entity_uuid"), primary_key=True
+        ForeignKey("entities.entity_uuid", onupdate="CASCADE"), primary_key=True
     )
-    person_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("natural_persons.person_uuid"), primary_key=True
+    person_uuid: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("natural_persons.person_uuid", onupdate="CASCADE"), nullable=True
     )
     filing_id: Mapped[str] = mapped_column(
         ForeignKey("statements.filing_id"), primary_key=True
@@ -173,17 +184,24 @@ class AdministratorLegal(Base):
 
 class Mandate(Base):
     __tablename__ = "mandates"
+    __table_args__ = (
+        UniqueConstraint(
+            "person_uuid", "enterprise_id", "filing_id", "function_code", "account_year",
+            name='uniq_mandate'
+        ),
+    )
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     person_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("natural_persons.person_uuid"), primary_key=True
+        ForeignKey("natural_persons.person_uuid")
     )
     enterprise_id: Mapped[str] = mapped_column(
-        ForeignKey("company_info.enterprise_id"), primary_key=True
+        ForeignKey("company_info.enterprise_id")
     )
     filing_id: Mapped[str] = mapped_column(
-        ForeignKey("statements.filing_id"), nullable=False
+        ForeignKey("statements.filing_id")
     )
-    function_code: Mapped[str] = mapped_column(String(7), primary_key=True)
+    function_code: Mapped[str | None] = mapped_column(String(7), nullable=True)
     start_date: Mapped[date] = mapped_column(DATE, nullable=True)
     end_date: Mapped[date] = mapped_column(DATE, nullable=True)
     account_year: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -199,7 +217,7 @@ class ParticipatingInterest(Base):
         ForeignKey("company_info.enterprise_id"), primary_key=True
     )
     entity_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("entities.entity_uuid"), primary_key=True
+        ForeignKey("entities.entity_uuid", onupdate="CASCADE"), primary_key=True
     )
     filing_id: Mapped[str] = mapped_column(
         ForeignKey("statements.filing_id"), primary_key=True
@@ -219,26 +237,60 @@ class ParticipatingInterest(Base):
         return f"{self.enterprise_id}-{self.entity_uuid}"
 
 
-class Shareholder(Base):
-    __tablename__ = "shareholders"
-
-    enterprise_id: Mapped[str] = mapped_column(
-        ForeignKey("company_info.enterprise_id"), primary_key=True
+class PersonShareholder(Base):
+    __tablename__ = "shareholders_person"
+    __table_args__ = (
+        UniqueConstraint(
+            "person_uuid", "filing_id", "nature_rights", "line_rights", "account_year",
+            name='uniq_sha_person'
+        ),
     )
-    entity_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("entities.entity_uuid"), primary_key=True
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    enterprise_id: Mapped[str] = mapped_column(
+        ForeignKey("company_info.enterprise_id"),
     )
     person_uuid: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("natural_persons.person_uuid"), primary_key=True
+        ForeignKey("natural_persons.person_uuid", onupdate="CASCADE"),
     )
     filing_id: Mapped[str] = mapped_column(
-        ForeignKey("statements.filing_id"), primary_key=True
+        ForeignKey("statements.filing_id"),
     )
     account_year: Mapped[int] = mapped_column(Integer, primary_key=True)
     nature_rights: Mapped[str] = mapped_column(String(255), nullable=True)
     line_rights: Mapped[str] = mapped_column(String(3), nullable=True)
-    securities_attached: Mapped[int] = mapped_column(Integer, nullable=True)
-    not_securities_attached: Mapped[str] = mapped_column(String(7), nullable=True)
+    securities_attached: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    not_securities_attached: Mapped[str] = mapped_column(String(15), nullable=True)
+    percentage: Mapped[float] = mapped_column(Float, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"{self.enterprise_id}-{self.account_year}"
+
+
+class EntityShareholder(Base):
+    __tablename__ = "shareholders_entity"
+    __table_args__ = (
+        UniqueConstraint(
+            "entity_uuid", "filing_id", "nature_rights", "line_rights", "account_year",
+            name='uniq_sha_ent'
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    enterprise_id: Mapped[str] = mapped_column(
+        ForeignKey("company_info.enterprise_id")
+    )
+    entity_uuid: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("entities.entity_uuid", onupdate="CASCADE")
+    )
+    filing_id: Mapped[str] = mapped_column(
+        ForeignKey("statements.filing_id")
+    )
+    account_year: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nature_rights: Mapped[str] = mapped_column(String(255), nullable=True)
+    line_rights: Mapped[str] = mapped_column(String(3), nullable=True)
+    securities_attached: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    not_securities_attached: Mapped[str] = mapped_column(String(15), nullable=True)
     percentage: Mapped[float] = mapped_column(Float, nullable=True)
 
     def __repr__(self) -> str:
