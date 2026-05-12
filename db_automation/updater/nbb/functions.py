@@ -48,7 +48,7 @@ def extractor(enterprise_id: str, connection: Connection) -> Company | None:
 
 
 def transformer(company: Company) -> Company:
-    for company_filing in company.filings:
+    for company_filing in company.filings[::-1]:
         if company_filing.filing is None:
             continue
         for person in company_filing.filing.natural_persons:
@@ -155,6 +155,7 @@ def transformer(company: Company) -> Company:
                 box=shareholder.address.box,
                 zipcode=shareholder.address.city or shareholder.address.other_postal_code,
                 country_code=shareholder.address.country,
+                profession=None,
             )
             sh_dict.setdefault('shareholders_person', [])
             for rights in shareholder.rights_held:
@@ -388,10 +389,11 @@ def loader(company: Company, connection: Connection):
         connection.execute(upsert_statements, rows_statements)
 
     if rows_facts:
-        codes = [
-            {"accountcode_id": row["accountcode_id"], "denomination": row["accountcode_id"]}
-            for row in rows_facts
-        ]
+        codes = sorted(
+            {row["accountcode_id"]: {"accountcode_id": row["accountcode_id"], "denomination": row["accountcode_id"]}
+             for row in rows_facts}.values(),
+            key=lambda x: x["accountcode_id"]
+        )
         connection.execute(upsert_codes, codes)
         connection.execute(upsert_facts, rows_facts)
 
